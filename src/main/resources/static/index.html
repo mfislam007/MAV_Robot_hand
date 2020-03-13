@@ -1,0 +1,88 @@
+<canvas id="myCanvas" width="1500" height="750" style="border:1px solid #000000;">
+</canvas>
+
+<script>
+var canvas = document.getElementById("myCanvas");    
+var ctx = canvas.getContext("2d");
+ctx.fillStyle = "#FF0000";
+var previous_x;
+var previous_y;
+var rad =10;
+
+canvas.addEventListener("mousedown", getPositionAndDraw, false);
+
+drawImage();
+
+function getRobotPosition(){
+    //ctx.beginPath();
+    fetch('http://localhost:8080/getRobotPosition')
+        .then(
+        function(response) {
+            if (response.status !== 200) {
+                console.log('Looks like there was a problem. Status Code: ' + response.status);
+                return;
+            }
+            response.json().then(function(data) {
+                drawLocation(data.x,data.z);
+            });
+            }
+        )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });    
+}
+
+
+
+async function drawImage(){
+    let img = await loadImage("./red-fox.jpg");
+    ctx.drawImage(img, 0, 0);
+    //to draw the initial position of the robot need to wait the promise of loading image
+    getRobotPosition();
+}
+
+function loadImage(url) {
+  return new Promise(r => { let i = new Image(); i.onload = (() => r(i)); i.src = url; });
+}
+
+function drawLocation(myx,myy){   
+    var circ = new Circle(myx, myy, rad);
+    
+    circ.fill(ctx);
+    previous_x =myx;
+    previous_y=myy;
+
+}
+
+//http://miloq.blogspot.com/2011/05/coordinates-mouse-click-canvas.html
+function getPositionAndDraw(event){
+    var x = event.x;
+    var y = event.y;
+    x -= canvas.offsetLeft;
+    y -= canvas.offsetTop;
+    //alert("x:" + x + " y:" + y);
+    var circ = new Circle(x, y, rad);
+    circ.fill(ctx);
+    //
+    ctx.moveTo(previous_x, previous_y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    previous_x =x;
+    previous_y=y;
+
+}
+
+  //https://stackoverflow.com/questions/26412567/draw-a-ball-as-object-in-canvas
+function Circle(x, y, r) {
+    "use strict";
+    this.x = (x === null) ? 0 : x;
+    this.y = (y === null) ? 0 : y;
+    this.r = (r === null) ? 0 : r;
+    
+    this.fill = function(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+</script>
